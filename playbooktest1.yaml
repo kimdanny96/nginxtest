@@ -1,0 +1,54 @@
+- name: Install nginx on CentOS
+  hosts: server	# centOS 그룹에 실행할 플레이북 
+  gather_facts: no 		# facts를 수집하지 않음으로써 앤서블의 성능 향상
+  become: yes 		# root권한으로 실행 
+
+  tasks:
+  - name: Update YUM repository configuration
+    replace:
+      path: "{{ item }}"
+      regexp: '^(mirrorlist=)'
+      replace: '#\1'
+      backup: yes
+    with_items:
+      - /etc/yum.repos.d/CentOS-Base.repo
+      - /etc/yum.repos.d/CentOS-CR.repo
+      - /etc/yum.repos.d/CentOS-Debuginfo.repo
+      - /etc/yum.repos.d/CentOS-Media.repo
+      - /etc/yum.repos.d/CentOS-Sources.repo
+      - /etc/yum.repos.d/CentOS-Vault.repo
+      - /etc/yum.repos.d/CentOS-fasttrack.repo
+      - /etc/yum.repos.d/CentOS-AppStream.repo
+
+  - name: Update YUM repository base URLs
+    replace:
+      path: "{{ item }}"
+      regexp: '^(#baseurl=http://mirror.centos.org)'
+      replace: 'baseurl=http://vault.centos.org'
+      backup: yes
+    with_items:
+      - /etc/yum.repos.d/CentOS-Base.repo
+      - /etc/yum.repos.d/CentOS-CR.repo
+      - /etc/yum.repos.d/CentOS-Debuginfo.repo
+      - /etc/yum.repos.d/CentOS-Media.repo
+      - /etc/yum.repos.d/CentOS-Sources.repo
+      - /etc/yum.repos.d/CentOS-Vault.repo
+      - /etc/yum.repos.d/CentOS-fasttrack.repo
+      - /etc/yum.repos.d/CentOS-AppStream.repo
+
+  - name: install epel-release
+    yum:
+      name: epel-release	# 저장소를 최신 버전으로 설치 
+      state: latest			
+  - name: install nginx
+    yum: 
+      name: nginx
+      state: present 	# present는 installed와 의미가 같다. 
+  - name: upload default index.html for web server
+    get_url: 				
+      url: https://www.nginx.com	
+      dest: /usr/share/nginx/html mode 0644
+  - name: start nginx web server
+    service: 			# service 모듈 사용
+      name: nginx	
+      state: started
